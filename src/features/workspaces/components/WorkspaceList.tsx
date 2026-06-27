@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Search,
   Plus,
@@ -111,7 +112,12 @@ const workspaces = [
   },
 ];
 
-const statusConfig = {
+type WorkspaceStatus = "connected" | "pending" | "error";
+
+const statusConfig: Record<
+  WorkspaceStatus,
+  { label: string; cls: string; icon: typeof CheckCircle2 }
+> = {
   connected: {
     label: "Connected",
     cls: "bg-emerald-50 text-emerald-600",
@@ -123,13 +129,10 @@ const statusConfig = {
     icon: Clock,
   },
   error: { label: "Error", cls: "bg-red-50 text-red-600", icon: AlertCircle },
-} as const;
+};
 
-interface WorkspaceListProps {
-  onOpenWorkspace: (name: string) => void;
-}
-
-export function WorkspaceList({ onOpenWorkspace }: WorkspaceListProps) {
+export function WorkspaceList() {
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [showNewWorkspace, setShowNewWorkspace] = useState(false);
   const [newName, setNewName] = useState("");
@@ -137,6 +140,10 @@ export function WorkspaceList({ onOpenWorkspace }: WorkspaceListProps) {
   const filtered = workspaces.filter((w) =>
     w.name.toLowerCase().includes(search.toLowerCase()),
   );
+
+  const handleOpenWorkspace = (name: string) => {
+    navigate(`/workspaces/${encodeURIComponent(name)}`);
+  };
 
   return (
     <div className="space-y-5">
@@ -168,13 +175,13 @@ export function WorkspaceList({ onOpenWorkspace }: WorkspaceListProps) {
       {/* Workspace Cards */}
       <div className="grid grid-cols-3 gap-4">
         {filtered.map((ws) => {
-          const sc = statusConfig[ws.status];
+          const sc = statusConfig[ws.status as WorkspaceStatus];
           const StatusIcon = sc.icon;
           return (
             <div
               key={ws.name}
               onClick={() =>
-                ws.status === "connected" && onOpenWorkspace(ws.name)
+                ws.status === "connected" && handleOpenWorkspace(ws.name)
               }
               className={`bg-card border border-border rounded-lg p-4 hover:shadow-sm transition-all ${
                 ws.status === "connected"
@@ -253,15 +260,7 @@ export function WorkspaceList({ onOpenWorkspace }: WorkspaceListProps) {
             >
               Cancel
             </Button>
-            <Button
-              onClick={() => {
-                setShowNewWorkspace(false);
-                setNewName("");
-              }}
-              disabled={!newName.trim()}
-            >
-              Create Workspace
-            </Button>
+            <Button onClick={() => setShowNewWorkspace(false)}>Create</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

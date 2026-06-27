@@ -1,5 +1,6 @@
 import { ChevronRight } from "lucide-react";
-import { PageType, breadcrumbMap } from "../data/navigation";
+import type { PageType } from "../config/navigation";
+import { breadcrumbMap } from "../config/navigation";
 
 interface BreadcrumbProps {
   currentPage: PageType;

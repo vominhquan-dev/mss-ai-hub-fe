@@ -1,9 +1,11 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Zap, Loader } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
 export function LoginPage() {
   const { login, isLoading } = useAuth();
+  const navigate = useNavigate();
   const [selectedRole, setSelectedRole] = useState<"admin" | "tester" | null>(
     null,
   );
@@ -32,6 +34,7 @@ export function LoginPage() {
       const role = roles.find((r) => r.id === selectedRole);
       if (role) {
         await login(role.email, "");
+        navigate("/", { replace: true });
       }
     }
   };

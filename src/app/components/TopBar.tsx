@@ -1,7 +1,7 @@
 import { Bell, Search } from "lucide-react";
 import { useAuth } from "../../features/auth";
 import { Breadcrumb } from "./Breadcrumb";
-import { PageType } from "../data/navigation";
+import type { PageType } from "../config/navigation";
 
 interface TopBarProps {
   currentPage: PageType;

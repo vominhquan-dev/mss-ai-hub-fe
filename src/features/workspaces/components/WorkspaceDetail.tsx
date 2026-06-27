@@ -1,411 +1,147 @@
 import { useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import {
-  ArrowLeft,
+  Search,
   CheckCircle2,
-  RefreshCw,
-  Link2,
-  FolderOpen,
-  ClipboardList,
-  Play,
-  Plus,
-  ExternalLink,
   Clock,
-  Users,
-  AlertTriangle,
-  AlertCircle,
+  ExternalLink,
+  Link2,
+  FolderKanban,
 } from "lucide-react";
 import { Input } from "../../../shared/ui/input";
 import { Button } from "../../../shared/ui/button";
-
-const stats = [
-  {
-    label: "Projects",
-    value: "5",
-    icon: FolderOpen,
-    color: "text-blue-600 bg-blue-50",
-  },
-  {
-    label: "Test Cases",
-    value: "412",
-    icon: ClipboardList,
-    color: "text-violet-600 bg-violet-50",
-  },
-  {
-    label: "Executions",
-    value: "1,847",
-    icon: Play,
-    color: "text-emerald-600 bg-emerald-50",
-  },
-  {
-    label: "Members",
-    value: "12",
-    icon: Users,
-    color: "text-orange-600 bg-orange-50",
-  },
-];
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+} from "../../../shared/ui/tabs";
 
 const projects = [
   {
     key: "KAN",
-    name: "Kanban Board Core",
-    requirements: 28,
+    name: "Kanban Platform",
+    requirements: 127,
     syncStatus: "synced",
     lastSync: "2 min ago",
   },
   {
-    key: "SHOP",
-    name: "E-Commerce Checkout",
-    requirements: 45,
-    syncStatus: "synced",
-    lastSync: "1h ago",
-  },
-  {
     key: "AUTH",
     name: "Authentication Service",
-    requirements: 19,
+    requirements: 42,
     syncStatus: "synced",
-    lastSync: "30 min ago",
-  },
-  {
-    key: "INFRA",
-    name: "Infrastructure Monitoring",
-    requirements: 12,
-    syncStatus: "pending",
-    lastSync: "6h ago",
+    lastSync: "5 min ago",
   },
   {
     key: "DASH",
-    name: "Analytics Dashboard",
-    requirements: 31,
+    name: "Dashboard Analytics",
+    requirements: 18,
     syncStatus: "synced",
-    lastSync: "15 min ago",
+    lastSync: "10 min ago",
+  },
+  {
+    key: "INFRA",
+    name: "Infrastructure & DevOps",
+    requirements: 34,
+    syncStatus: "synced",
+    lastSync: "1 hour ago",
+  },
+  {
+    key: "MOB",
+    name: "Mobile App",
+    requirements: 56,
+    syncStatus: "pending",
+    lastSync: "N/A",
   },
 ];
 
-const members = [
-  {
-    name: "Alex Johnson",
-    role: "Admin",
-    email: "alex@company.com",
-    joined: "Jan 2024",
+const workspaceData: Record<
+  string,
+  { name: string; key: string; status: string }
+> = {
+  "Kanban Platform": {
+    name: "Kanban Platform",
+    key: "KAN",
+    status: "connected",
   },
-  {
-    name: "Sarah Kim",
-    role: "QA Lead",
-    email: "sarah@company.com",
-    joined: "Feb 2024",
+  "E-Commerce Suite": {
+    name: "E-Commerce Suite",
+    key: "SHOP",
+    status: "connected",
   },
-  {
-    name: "Mike Rodriguez",
-    role: "Developer",
-    email: "mike@company.com",
-    joined: "Mar 2024",
+  "Infrastructure Team": {
+    name: "Infrastructure Team",
+    key: "INFRA",
+    status: "connected",
   },
-  {
-    name: "Lisa Martinez",
-    role: "Tester",
-    email: "lisa@company.com",
-    joined: "Mar 2024",
-  },
-  {
-    name: "Tom Brown",
-    role: "Tester",
-    email: "tom@company.com",
-    joined: "Apr 2024",
-  },
-];
+};
 
-const activities = [
-  {
-    text: "Jira sync completed — 14 new requirements added",
-    time: "2 min ago",
-    type: "sync",
-  },
-  {
-    text: "Test suite 'Auth Flow' passed 42/42 cases",
-    time: "1h ago",
-    type: "pass",
-  },
-  { text: "New project DASH added from Jira", time: "3h ago", type: "info" },
-  {
-    text: "TC-0891 marked as blocked by Mike R.",
-    time: "5h ago",
-    type: "warn",
-  },
-  {
-    text: "Execution Run #228 completed with 87% pass rate",
-    time: "8h ago",
-    type: "pass",
-  },
-  {
-    text: "Sarah K. added 12 test cases to AUTH suite",
-    time: "1d ago",
-    type: "info",
-  },
-];
-
-interface WorkspaceDetailProps {
-  workspaceName: string;
-  workspaceStatus: "connected" | "pending" | "error";
-  onBack: () => void;
-  onOpenProject: (projectKey: string) => void;
-}
-
-export function WorkspaceDetail({
-  workspaceName,
-  workspaceStatus,
-  onBack,
-  onOpenProject,
-}: WorkspaceDetailProps) {
-  const [tab, setTab] = useState<"overview" | "members" | "projects" | "jira">(
-    workspaceStatus === "pending" ? "jira" : "overview",
-  );
-  const [syncing, setSyncing] = useState(false);
+export function WorkspaceDetail() {
+  const { name } = useParams<{ name: string }>();
+  const navigate = useNavigate();
+  const decodedName = decodeURIComponent(name || "");
+  const ws = workspaceData[decodedName];
+  const [tab, setTab] = useState("projects");
   const [jiraUrl, setJiraUrl] = useState("");
   const [apiToken, setApiToken] = useState("");
   const [email, setEmail] = useState("");
   const [connecting, setConnecting] = useState(false);
 
-  const handleSync = () => {
-    setSyncing(true);
-    setTimeout(() => setSyncing(false), 2000);
-  };
+  const workspaceStatus = ws?.status ?? "pending";
 
   const handleConnect = () => {
-    if (!jiraUrl.trim() || !apiToken.trim() || !email.trim()) return;
     setConnecting(true);
     setTimeout(() => {
       setConnecting(false);
-      alert("Workspace connected successfully!");
-    }, 2000);
+    }, 1000);
   };
 
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div>
-        <button
-          onClick={onBack}
-          className="flex items-center gap-1.5 text-[12px] text-muted-foreground hover:text-foreground mb-3 transition-colors"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          Back to Workspaces
-        </button>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-[13px] font-bold text-primary">
-              {workspaceName.slice(0, 2).toUpperCase()}
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-foreground">{workspaceName}</h1>
-                <span
-                  className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full ${
-                    workspaceStatus === "connected"
-                      ? "text-emerald-600 bg-emerald-50"
-                      : workspaceStatus === "pending"
-                        ? "text-amber-600 bg-amber-50"
-                        : "text-red-600 bg-red-50"
-                  }`}
-                >
-                  {workspaceStatus === "connected" ? (
-                    <>
-                      <CheckCircle2 className="w-3 h-3" /> Connected
-                    </>
-                  ) : workspaceStatus === "pending" ? (
-                    <>
-                      <Clock className="w-3 h-3" /> Not Connected
-                    </>
-                  ) : (
-                    <>
-                      <AlertCircle className="w-3 h-3" /> Error
-                    </>
-                  )}
-                </span>
-              </div>
-              <p className="text-muted-foreground text-[13px]">
-                {workspaceStatus === "connected"
-                  ? "kanban.atlassian.net"
-                  : "No Jira connection"}
-              </p>
-            </div>
-          </div>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => navigate("/workspaces")}
+            className="text-[13px] text-muted-foreground hover:text-foreground transition-colors"
+          >
+            &larr; Back to Workspaces
+          </button>
         </div>
+        <h1 className="text-foreground">{decodedName}</h1>
+        <div />
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-border flex gap-0">
-        {(["overview", "members", "projects", "jira"] as const).map((t) => {
-          const isDisabled = workspaceStatus !== "connected" && t !== "jira";
-          return (
-            <button
-              key={t}
-              onClick={() => !isDisabled && setTab(t)}
-              disabled={isDisabled}
-              className={`px-4 py-2.5 text-[13px] capitalize border-b-2 -mb-px transition-colors ${
-                isDisabled
-                  ? "border-transparent text-muted-foreground/50 cursor-not-allowed opacity-50"
-                  : tab === t
-                    ? "border-primary text-primary font-medium"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {t === "jira"
-                ? "Jira Integration"
-                : t.charAt(0).toUpperCase() + t.slice(1)}
-            </button>
-          );
-        })}
-      </div>
+      <Tabs value={tab} onValueChange={setTab}>
+        <TabsList>
+          <TabsTrigger value="projects">
+            <FolderKanban className="w-3.5 h-3.5 mr-1.5" />
+            Projects
+          </TabsTrigger>
+          <TabsTrigger value="jira">
+            <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
+            Jira Integration
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Overview Tab */}
-      {tab === "overview" && (
-        <div className="space-y-5">
-          <div className="grid grid-cols-4 gap-4">
-            {stats.map((s) => {
-              const Icon = s.icon;
-              return (
-                <div
-                  key={s.label}
-                  className="bg-card border border-border rounded-lg p-4"
-                >
-                  <div
-                    className={`w-8 h-8 rounded-md flex items-center justify-center mb-3 ${s.color}`}
-                  >
-                    <Icon className="w-4 h-4" />
-                  </div>
-                  <p className="text-[24px] font-semibold text-foreground leading-none">
-                    {s.value}
-                  </p>
-                  <p className="text-[12px] text-muted-foreground mt-1">
-                    {s.label}
-                  </p>
-                </div>
-              );
-            })}
+        <TabsContent value="projects">
+          {/* Search */}
+          <div className="relative max-w-md mb-4">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input placeholder="Search projects..." className="pl-9" />
           </div>
-          <div className="bg-card border border-border rounded-lg p-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-foreground">Activity Feed</h3>
-              <button className="text-[12px] text-primary hover:underline">
-                View all
-              </button>
-            </div>
-            <div className="space-y-1">
-              {activities.map((a, i) => (
-                <div
-                  key={i}
-                  className="flex items-start gap-3 py-2.5 border-b border-border last:border-0"
-                >
-                  <div
-                    className={`w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0 ${a.type === "pass" ? "bg-emerald-500" : a.type === "warn" ? "bg-amber-500" : a.type === "sync" ? "bg-blue-500" : "bg-gray-400"}`}
-                  />
-                  <div className="flex-1">
-                    <p className="text-[12px] text-foreground">{a.text}</p>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">
-                      {a.time}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* Members Tab */}
-      {tab === "members" && (
-        <div className="bg-card border border-border rounded-lg overflow-hidden">
-          <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-            <p className="text-[13px] font-medium text-foreground">
-              {members.length} members
-            </p>
-            <button className="flex items-center gap-1.5 text-[12px] bg-primary text-primary-foreground px-2.5 py-1.5 rounded-md hover:opacity-90 transition-opacity">
-              <Plus className="w-3 h-3" /> Invite Member
-            </button>
-          </div>
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-border bg-muted/30">
-                <th className="text-left px-4 py-2.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                  Name
-                </th>
-                <th className="text-left px-4 py-2.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                  Email
-                </th>
-                <th className="text-left px-4 py-2.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                  Role
-                </th>
-                <th className="text-left px-4 py-2.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                  Joined
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {members.map((m) => (
-                <tr
-                  key={m.name}
-                  className="border-b border-border last:border-0 hover:bg-muted/20"
-                >
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary">
-                        {m.name
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("")}
-                      </div>
-                      <span className="text-[13px] font-medium text-foreground">
-                        {m.name}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-[13px] text-muted-foreground">
-                    {m.email}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${m.role === "Admin" ? "bg-purple-50 text-purple-600" : m.role === "QA Lead" ? "bg-blue-50 text-blue-600" : "bg-gray-100 text-gray-600"}`}
-                    >
-                      {m.role}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-[12px] text-muted-foreground">
-                    {m.joined}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* Projects Tab */}
-      {tab === "projects" && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <p className="text-[13px] text-muted-foreground">
-              {projects.length} projects synced from Jira
-            </p>
-            <button
-              onClick={handleSync}
-              className="flex items-center gap-1.5 text-[13px] bg-primary text-primary-foreground px-3 py-1.5 rounded-md hover:opacity-90 transition-opacity"
-            >
-              <RefreshCw
-                className={`w-3.5 h-3.5 ${syncing ? "animate-spin" : ""}`}
-              />
-              Sync Projects
-            </button>
-          </div>
+          {/* Projects Table */}
           <div className="bg-card border border-border rounded-lg overflow-hidden">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-border bg-muted/30">
+                <tr className="bg-muted/50 border-b border-border">
                   <th className="text-left px-4 py-2.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                    Project Key
+                    Key
                   </th>
                   <th className="text-left px-4 py-2.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                    Project Name
+                    Name
                   </th>
                   <th className="text-left px-4 py-2.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                     Requirements
@@ -440,7 +176,11 @@ export function WorkspaceDetail({
                     </td>
                     <td className="px-4 py-3">
                       <span
-                        className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full ${p.syncStatus === "synced" ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-600"}`}
+                        className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full ${
+                          p.syncStatus === "synced"
+                            ? "bg-emerald-50 text-emerald-600"
+                            : "bg-amber-50 text-amber-600"
+                        }`}
                       >
                         {p.syncStatus === "synced" ? (
                           <CheckCircle2 className="w-3 h-3" />
@@ -456,7 +196,11 @@ export function WorkspaceDetail({
                     </td>
                     <td className="px-4 py-3 text-right">
                       <button
-                        onClick={() => onOpenProject(p.key)}
+                        onClick={() =>
+                          navigate(
+                            `/workspaces/${encodeURIComponent(decodedName)}/projects/${p.key}`,
+                          )
+                        }
                         className="text-[12px] text-primary hover:bg-accent px-2.5 py-1 rounded-md transition-colors font-medium"
                       >
                         Open Project
@@ -467,14 +211,10 @@ export function WorkspaceDetail({
               </tbody>
             </table>
           </div>
-        </div>
-      )}
+        </TabsContent>
 
-      {/* Jira Integration Tab */}
-      {tab === "jira" && (
-        <>
+        <TabsContent value="jira">
           {workspaceStatus === "pending" ? (
-            // Not connected - show connection form
             <div className="bg-card border border-border rounded-lg p-8 max-w-2xl">
               <div className="mb-6">
                 <h2 className="text-foreground text-lg font-semibold mb-2">
@@ -496,9 +236,6 @@ export function WorkspaceDetail({
                     value={jiraUrl}
                     onChange={(e) => setJiraUrl(e.target.value)}
                   />
-                  <p className="text-[11px] text-muted-foreground mt-1">
-                    Enter your Jira Cloud instance URL
-                  </p>
                 </div>
                 <div>
                   <label className="block text-[12px] font-medium text-foreground mb-2">
@@ -510,10 +247,6 @@ export function WorkspaceDetail({
                     value={apiToken}
                     onChange={(e) => setApiToken(e.target.value)}
                   />
-                  <p className="text-[11px] text-muted-foreground mt-1">
-                    Generate from Jira settings
-                    (account.atlassian.net/manage/api-tokens)
-                  </p>
                 </div>
                 <div>
                   <label className="block text-[12px] font-medium text-foreground mb-2">
@@ -525,9 +258,6 @@ export function WorkspaceDetail({
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                   />
-                  <p className="text-[11px] text-muted-foreground mt-1">
-                    Your Jira account email
-                  </p>
                 </div>
                 <Button
                   onClick={handleConnect}
@@ -545,7 +275,6 @@ export function WorkspaceDetail({
               </div>
             </div>
           ) : (
-            // Connected - show connection details
             <div className="grid grid-cols-2 gap-5">
               <div className="space-y-4">
                 <div className="bg-card border border-border rounded-lg p-5">
@@ -594,12 +323,6 @@ export function WorkspaceDetail({
                       );
                     })}
                   </div>
-                </div>
-                <div className="flex gap-2">
-                  <button className="w-full flex items-center justify-center gap-1.5 text-[13px] border border-border bg-card text-foreground px-3 py-2 rounded-md hover:bg-muted/50 transition-colors">
-                    <Link2 className="w-3.5 h-3.5" />
-                    Reconnect Jira
-                  </button>
                 </div>
               </div>
               <div className="bg-card border border-border rounded-lg p-5">
@@ -661,8 +384,8 @@ export function WorkspaceDetail({
               </div>
             </div>
           )}
-        </>
-      )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useAuth } from "../../auth/context/AuthContext";
+import { useParams, useNavigate } from "react-router-dom";
+import { useAuth } from "../../auth";
 import {
   ArrowLeft,
   RefreshCw,
@@ -394,19 +395,22 @@ const statusConfig = {
   rejected: { label: "Rejected", cls: "bg-red-50 text-red-700" },
 };
 
-interface ProjectDetailProps {
-  projectKey: string;
-  onBack: () => void;
-  onOpenTestCase?: (testCaseId: string) => void;
-}
-
-export function ProjectDetail({
-  projectKey,
-  onBack,
-  onOpenTestCase,
-}: ProjectDetailProps) {
+export function ProjectDetail() {
+  const { key: projectKey } = useParams<{ name: string; key: string }>();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const isTester = user?.role === "tester";
+  const projectKeyValue = projectKey ?? "";
+  const projectNames: Record<string, string> = {
+    KAN: "Kanban Board Core",
+    SHOP: "E-Commerce Checkout",
+    AUTH: "Authentication Service",
+    INFRA: "Infrastructure Monitoring",
+    DASH: "Analytics Dashboard",
+  };
+  const projectName = projectKeyValue
+    ? (projectNames[projectKeyValue] ?? projectKeyValue)
+    : "Unknown Project";
 
   const [tab, setTab] = useState<
     "overview" | "requirements" | "suites" | "cases" | "executions"
@@ -538,20 +542,12 @@ export function ProjectDetail({
     return matchesSearch && matchesStatus;
   });
 
-  const projectNames: Record<string, string> = {
-    KAN: "Kanban Board Core",
-    SHOP: "E-Commerce Checkout",
-    AUTH: "Authentication Service",
-    INFRA: "Infrastructure Monitoring",
-    DASH: "Analytics Dashboard",
-  };
-
   return (
     <div className="space-y-5">
       {/* Header */}
       <div>
         <button
-          onClick={onBack}
+          onClick={() => navigate(-1)}
           className="flex items-center gap-1.5 text-[12px] text-muted-foreground hover:text-foreground mb-3 transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
@@ -567,7 +563,7 @@ export function ProjectDetail({
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-foreground">
-                {projectNames[projectKey] ?? projectKey}
+                {projectNames[projectKeyValue] ?? projectKeyValue}
               </h1>
               <span className="text-[11px] font-mono font-bold text-primary bg-blue-50 px-2 py-0.5 rounded">
                 {projectKey}
@@ -994,7 +990,7 @@ export function ProjectDetail({
                     <tr
                       key={tc.id}
                       className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors cursor-pointer"
-                      onClick={() => onOpenTestCase?.(tc.id)}
+                      onClick={() => navigate(`/test-cases/${tc.id}`)}
                     >
                       <td className="px-4 py-3">
                         <span className="text-[12px] font-mono font-semibold text-foreground">
@@ -1030,7 +1026,7 @@ export function ProjectDetail({
                           className="text-[12px] text-primary hover:bg-accent px-2 py-0.5 rounded transition-colors font-medium"
                           onClick={(e) => {
                             e.stopPropagation();
-                            onOpenTestCase?.(tc.id);
+                            navigate(`/test-cases/${tc.id}`);
                           }}
                         >
                           View
@@ -1356,10 +1352,10 @@ export function ProjectDetail({
                   </div>
                   <div>
                     <p className="text-[13px] font-medium text-foreground">
-                      {projectNames[projectKey] ?? projectKey}
+                      {projectNames[projectKeyValue] ?? projectKeyValue}
                     </p>
                     <p className="text-[11px] text-muted-foreground">
-                      {projectKey} workspace
+                      {projectKeyValue} workspace
                     </p>
                   </div>
                 </div>
@@ -1480,10 +1476,10 @@ export function ProjectDetail({
                   </div>
                   <div>
                     <p className="text-[13px] font-medium text-foreground">
-                      {projectNames[projectKey] ?? projectKey}
+                      {projectNames[projectKeyValue] ?? projectKeyValue}
                     </p>
                     <p className="text-[11px] text-muted-foreground">
-                      {projectKey} workspace
+                      {projectKeyValue} workspace
                     </p>
                   </div>
                 </div>
